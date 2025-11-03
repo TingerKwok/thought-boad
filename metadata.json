@@ -1,0 +1,5 @@
+{
+  "name": "Thought Board",
+  "description": "A collaborative board to share thoughts on various topics using virtual sticky notes.",
+  "requestFramePermissions": []
+}
