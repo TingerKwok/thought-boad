@@ -1,46 +1,11 @@
-import React, { useCallback } from 'react';
-import { Topic, Note } from './types';
-import useLocalStorage from './hooks/useLocalStorage';
+import React from 'react';
+import { Topic } from './types';
+import { useFirebaseData } from './hooks/useFirebaseData';
 import TopicBoard from './components/TopicBoard';
 import AddTopicForm from './components/AddTopicForm';
 
 function App() {
-  const [topics, setTopics] = useLocalStorage<Topic[]>('thought-board-topics', []);
-
-  const addTopic = useCallback((title: string) => {
-    const newTopic: Topic = {
-      id: crypto.randomUUID(),
-      title,
-      notes: [],
-    };
-    setTopics(prevTopics => [newTopic, ...prevTopics]);
-  }, [setTopics]);
-  
-  const deleteTopic = useCallback((topicId: string) => {
-    setTopics(prevTopics => prevTopics.filter(topic => topic.id !== topicId));
-  }, [setTopics]);
-
-  const addNoteToTopic = useCallback((topicId: string, content: string) => {
-    const newNote: Note = {
-      id: crypto.randomUUID(),
-      content,
-    };
-    setTopics(prevTopics =>
-      prevTopics.map(topic =>
-        topic.id === topicId ? { ...topic, notes: [...topic.notes, newNote] } : topic
-      )
-    );
-  }, [setTopics]);
-
-  const deleteNoteFromTopic = useCallback((topicId: string, noteId: string) => {
-    setTopics(prevTopics =>
-      prevTopics.map(topic =>
-        topic.id === topicId
-          ? { ...topic, notes: topic.notes.filter(note => note.id !== noteId) }
-          : topic
-      )
-    );
-  }, [setTopics]);
+  const { topics, addTopic, deleteTopic, addNoteToTopic, deleteNoteFromTopic } = useFirebaseData();
 
   return (
     <div className="min-h-screen text-gray-800 dark:text-gray-200 font-sans p-4 sm:p-8 transition-colors duration-300">
