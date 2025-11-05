@@ -77,9 +77,18 @@ export function useFirebaseData() {
     if (!db) return;
     const notesRef = ref(db, `topics/${topicId}/notes`);
     const newNoteRef = push(notesRef);
+    
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = (now.getMonth() + 1).toString().padStart(2, '0');
+    const day = now.getDate().toString().padStart(2, '0');
+    const hour = now.getHours().toString().padStart(2, '0');
+    const minute = now.getMinutes().toString().padStart(2, '0');
+    const timestamp = `${year}/${month}/${day} ${hour}:${minute}`;
+
     set(newNoteRef, {
       content,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }),
+      timestamp,
     });
   }, []);
 
