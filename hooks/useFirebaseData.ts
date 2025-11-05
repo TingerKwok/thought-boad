@@ -1,75 +1,58 @@
-import { useState, useEffect, useCallback } from 'react';
-import { db } from '../firebaseConfig';
-import { ref, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { useCallback } from 'react';
+import useLocalStorage from './useLocalStorage';
 import { Topic, Note } from '../types';
 
-const topicsRef = ref(db, 'topics');
-
+// This hook now uses Local Storage instead of Firebase for data persistence.
+// The function name is kept as `useFirebaseData` to minimize changes in App.tsx.
 export function useFirebaseData() {
-  const [topics, setTopics] = useState<Topic[]>([]);
+  const [topics, setTopics] = useLocalStorage<Topic[]>('thought-board-topics', []);
 
-  useEffect(() => {
-    // Listen for data changes at the 'topics' path
-    const unsubscribe = onValue(topicsRef, (snapshot) => {
-      const data = snapshot.val();
-      // If data is null (e.g., first time), use empty array
-      setTopics(data || []);
-    });
-
-    // Cleanup subscription on component unmount
-    return () => unsubscribe();
-  }, []);
-
-  const addTopic = useCallback(async (title: string) => {
+  const addTopic = useCallback((title: string) => {
     const newTopic: Topic = {
       id: crypto.randomUUID(),
       title,
       notes: [],
     };
-    
-    await runTransaction(topicsRef, (currentData: Topic[]) => {
-      const currentTopics = currentData || [];
-      return [newTopic, ...currentTopics];
-    });
-  }, []);
+    // Add new topics to the end of the array so they appear at the bottom.
+    setTopics(prevTopics => [...prevTopics, newTopic]);
+  }, [setTopics]);
   
-  const deleteTopic = useCallback(async (topicId: string) => {
-     await runTransaction(topicsRef, (currentData: Topic[]) => {
-      if (currentData === null) {
-        return [];
-      }
-      return currentData.filter(topic => topic.id !== topicId);
-    });
+  const deleteTopic = useCallback((topicId: string) => {
+    setTopics(prevTopics => prevTopics.filter(topic => topic.id !== topicId));
   }, [setTopics]);
 
-  const addNoteToTopic = useCallback(async (topicId: string, content: string) => {
+  const addNoteToTopic = useCallback((topicId: string, content: string) => {
     const newNote: Note = {
       id: crypto.randomUUID(),
       content,
     };
-    
-    await runTransaction(topicsRef, (currentData: Topic[]) => {
-       if (currentData === null) {
-        return [];
-      }
-      return currentData.map(topic =>
-        topic.id === topicId ? { ...topic, notes: [...(topic.notes || []), newNote] } : topic
-      );
-    });
-  }, []);
 
-  const deleteNoteFromTopic = useCallback(async (topicId: string, noteId: string) => {
-    await runTransaction(topicsRef, (currentData: Topic[]) => {
-      if (currentData === null) {
-        return [];
-      }
-      return currentData.map(topic =>
-        topic.id === topicId
-          ? { ...topic, notes: topic.notes.filter(note => note.id !== noteId) }
-          : topic
-      );
-    });
-  }, []);
+    setTopics(prevTopics => 
+      prevTopics.map(topic => {
+        if (topic.id === topicId) {
+          return {
+            ...topic,
+            notes: [...topic.notes, newNote],
+          };
+        }
+        return topic;
+      })
+    );
+  }, [setTopics]);
+
+  const deleteNoteFromTopic = useCallback((topicId: string, noteId: string) => {
+    setTopics(prevTopics =>
+      prevTopics.map(topic => {
+        if (topic.id === topicId) {
+          return {
+            ...topic,
+            notes: topic.notes.filter(note => note.id !== noteId),
+          };
+        }
+        return topic;
+      })
+    );
+  }, [setTopics]);
 
   return { topics, addTopic, deleteTopic, addNoteToTopic, deleteNoteFromTopic };
 }

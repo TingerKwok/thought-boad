@@ -1,6 +1,5 @@
 import React from 'react';
-import { Topic } from './types';
-import { useFirebaseData } from './hooks/useFirebaseData';
+import { useFirebaseData } from './hooks/useFirebaseData'; // This now uses local storage
 import TopicBoard from './components/TopicBoard';
 import AddTopicForm from './components/AddTopicForm';
 
@@ -33,7 +32,9 @@ function App() {
         ) : (
           <div className="text-center mt-12 bg-white dark:bg-gray-800 p-10 rounded-xl shadow-lg">
             <h2 className="text-2xl font-semibold text-gray-700 dark:text-gray-300">It's a bit quiet here...</h2>
-            <p className="mt-2 text-gray-500 dark:text-gray-400">Create your first topic to get started!</p>
+            <p className="mt-2 text-gray-500 dark:text-gray-400">
+              Create your first topic to get started!
+            </p>
           </div>
         )}
       </main>

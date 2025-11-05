@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, Database } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 // --- ACTION REQUIRED ---
 // Replace the following object with your project's own Firebase configuration
@@ -14,8 +14,22 @@ const firebaseConfig = {
   appId: "1:1234567890:web:abcdef123456"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// A check to see if the configuration has been changed from the placeholder.
+export const isFirebaseConfigured = firebaseConfig.apiKey !== "AIzaSy...YOUR_KEY";
 
-// Get a reference to the database service
-export const db = getDatabase(app);
+let db: Database | undefined;
+
+// Only initialize Firebase if the configuration is provided.
+if (isFirebaseConfigured) {
+  try {
+    const app = initializeApp(firebaseConfig);
+    // Get a reference to the database service
+    db = getDatabase(app);
+  } catch (e) {
+    console.error("Firebase initialization error. Please check your firebaseConfig.ts", e);
+  }
+} else {
+  console.warn("Firebase is not configured. Please update firebaseConfig.ts with your project's credentials.");
+}
+
+export { db };
