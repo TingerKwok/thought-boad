@@ -1,10 +1,44 @@
 import React from 'react';
-import { useFirebaseData } from './hooks/useFirebaseData'; // This now uses local storage
+import { useFirebaseData } from './hooks/useFirebaseData';
 import TopicBoard from './components/TopicBoard';
 import AddTopicForm from './components/AddTopicForm';
+import { isFirebaseConfigured } from './firebaseConfig';
+
+// A component to display a helpful message if Firebase is not configured.
+function FirebaseConfigMessage() {
+  return (
+    <div className="fixed inset-0 bg-gray-900/80 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-lg shadow-2xl p-8 max-w-lg w-full text-center">
+        <h2 className="text-2xl font-bold text-red-600 dark:text-red-500 mb-4">Action Required: Configure Firebase</h2>
+        <p className="mb-4">
+          This collaborative board requires a Firebase Realtime Database to function.
+        </p>
+        <p className="mb-6">
+          Please open the <code className="bg-gray-200 dark:bg-gray-700 rounded px-2 py-1 text-sm font-mono">firebaseConfig.ts</code> file and replace the placeholder configuration with your own Firebase project's credentials.
+        </p>
+        <a 
+          href="https://console.firebase.google.com/" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="inline-block bg-indigo-600 text-white font-semibold rounded-lg shadow-md px-6 py-3 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800 transition-transform transform hover:scale-105"
+        >
+          Go to Firebase Console
+        </a>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-6">
+          After configuring, also ensure your Realtime Database rules allow reads and writes.
+        </p>
+      </div>
+    </div>
+  );
+}
 
 function App() {
   const { topics, addTopic, deleteTopic, addNoteToTopic, deleteNoteFromTopic } = useFirebaseData();
+
+  // If Firebase is not configured, show the setup message instead of the app.
+  if (!isFirebaseConfigured) {
+    return <FirebaseConfigMessage />;
+  }
 
   return (
     <div className="min-h-screen text-gray-800 dark:text-gray-200 font-sans p-4 sm:p-8 transition-colors duration-300">

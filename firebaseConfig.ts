@@ -5,13 +5,13 @@ import { getDatabase, Database } from "https://www.gstatic.com/firebasejs/10.12.
 // Replace the following object with your project's own Firebase configuration
 // from the Firebase console.
 const firebaseConfig = {
-  apiKey: "AIzaSy...YOUR_KEY",
-  authDomain: "your-project-id.firebaseapp.com",
-  databaseURL: "https://your-project-id-default-rtdb.firebaseio.com",
-  projectId: "your-project-id",
-  storageBucket: "your-project-id.appspot.com",
-  messagingSenderId: "1234567890",
-  appId: "1:1234567890:web:abcdef123456"
+  apiKey: "AIzaSyCMBiQMli_o8TKLi3oWFtPZIappWakA5lE",
+  authDomain: "thought-board-a935a.firebaseapp.com",
+  databaseURL: "https://thought-board-a935a-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "thought-board-a935a",
+  storageBucket: "thought-board-a935a.appspot.com",
+  messagingSenderId: "97870183497",
+  appId: "1:97870183497:web:29c2fdb18ff5c42d6c1398"
 };
 
 // A check to see if the configuration has been changed from the placeholder.

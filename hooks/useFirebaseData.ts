@@ -1,58 +1,89 @@
-import { useCallback } from 'react';
-import useLocalStorage from './useLocalStorage';
+import { useState, useEffect, useCallback } from 'react';
+import { ref, onValue, set, remove, push } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { db, isFirebaseConfigured } from '../firebaseConfig';
 import { Topic, Note } from '../types';
 
-// This hook now uses Local Storage instead of Firebase for data persistence.
-// The function name is kept as `useFirebaseData` to minimize changes in App.tsx.
+// This interface describes the shape of the data as it's stored in Firebase.
+// Firebase Realtime Database doesn't natively support arrays, so we use objects with unique keys.
+interface FirebaseTopics {
+  [key: string]: Omit<Topic, 'id' | 'notes'> & {
+    notes?: { [key: string]: Omit<Note, 'id'> }
+  };
+}
+
 export function useFirebaseData() {
-  const [topics, setTopics] = useLocalStorage<Topic[]>('thought-board-topics', []);
+  const [topics, setTopics] = useState<Topic[]>([]);
+
+  useEffect(() => {
+    // If Firebase is not configured, do nothing. The App component will display a setup message.
+    if (!isFirebaseConfigured || !db) {
+      return;
+    }
+
+    const topicsRef = ref(db, 'topics');
+    
+    // Set up a real-time listener. 'onValue' fires once with the initial data,
+    // and then again every time the data changes in the database.
+    const unsubscribe = onValue(topicsRef, (snapshot) => {
+      const data: FirebaseTopics | null = snapshot.val();
+      if (data) {
+        // Transform the Firebase object data into the array format the app uses.
+        const topicsArray: Topic[] = Object.entries(data).map(([topicId, topicData]) => {
+          const notesArray: Note[] = topicData.notes 
+            ? Object.entries(topicData.notes).map(([noteId, noteData]) => ({
+              id: noteId,
+              content: noteData.content,
+            }))
+            : [];
+          return {
+            id: topicId,
+            title: topicData.title,
+            notes: notesArray,
+          };
+        });
+        // Reverse the array to show the most recently created topics first.
+        setTopics(topicsArray.reverse());
+      } else {
+        // If there's no data in the database, set topics to an empty array.
+        setTopics([]);
+      }
+    });
+
+    // Return a cleanup function to detach the listener when the component unmounts.
+    // This prevents memory leaks.
+    return () => unsubscribe();
+  }, []); // The empty dependency array ensures this effect runs only once on mount.
 
   const addTopic = useCallback((title: string) => {
-    const newTopic: Topic = {
-      id: crypto.randomUUID(),
+    if (!db) return;
+    const topicsRef = ref(db, 'topics');
+    const newTopicRef = push(topicsRef); // 'push' generates a unique ID.
+    set(newTopicRef, {
       title,
-      notes: [],
-    };
-    // Add new topics to the end of the array so they appear at the bottom.
-    setTopics(prevTopics => [...prevTopics, newTopic]);
-  }, [setTopics]);
+      notes: {}, // Initialize with an empty notes object.
+    });
+  }, []);
   
   const deleteTopic = useCallback((topicId: string) => {
-    setTopics(prevTopics => prevTopics.filter(topic => topic.id !== topicId));
-  }, [setTopics]);
+    if (!db) return;
+    const topicRef = ref(db, `topics/${topicId}`);
+    remove(topicRef);
+  }, []);
 
   const addNoteToTopic = useCallback((topicId: string, content: string) => {
-    const newNote: Note = {
-      id: crypto.randomUUID(),
+    if (!db) return;
+    const notesRef = ref(db, `topics/${topicId}/notes`);
+    const newNoteRef = push(notesRef);
+    set(newNoteRef, {
       content,
-    };
-
-    setTopics(prevTopics => 
-      prevTopics.map(topic => {
-        if (topic.id === topicId) {
-          return {
-            ...topic,
-            notes: [...topic.notes, newNote],
-          };
-        }
-        return topic;
-      })
-    );
-  }, [setTopics]);
+    });
+  }, []);
 
   const deleteNoteFromTopic = useCallback((topicId: string, noteId: string) => {
-    setTopics(prevTopics =>
-      prevTopics.map(topic => {
-        if (topic.id === topicId) {
-          return {
-            ...topic,
-            notes: topic.notes.filter(note => note.id !== noteId),
-          };
-        }
-        return topic;
-      })
-    );
-  }, [setTopics]);
+    if (!db) return;
+    const noteRef = ref(db, `topics/${topicId}/notes/${noteId}`);
+    remove(noteRef);
+  }, []);
 
   return { topics, addTopic, deleteTopic, addNoteToTopic, deleteNoteFromTopic };
 }
