@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Topic, Note } from '../types';
 import StickyNote from './StickyNote';
@@ -49,7 +48,12 @@ const TopicBoard: React.FC<TopicBoardProps> = ({ topic, addNote, deleteNote, del
   return (
     <div className="bg-white dark:bg-gray-800/50 backdrop-blur-sm rounded-xl shadow-lg p-6 flex flex-col gap-4 w-full">
       <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-3">
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{topic.title}</h2>
+        <div className="flex items-baseline">
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{topic.title}</h2>
+          {topic.createdAt && (
+            <span className="ml-3 text-sm font-normal text-gray-400 dark:text-gray-500">{topic.createdAt}</span>
+          )}
+        </div>
         <button 
           onClick={handleDeleteTopic}
           className="font-sans text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 font-bold text-2xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"

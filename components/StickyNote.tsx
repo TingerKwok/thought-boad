@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Note } from '../types';
 
@@ -12,7 +11,7 @@ interface StickyNoteProps {
 const StickyNote: React.FC<StickyNoteProps> = ({ note, color, rotation, onDelete }) => {
   return (
     <div
-      className={`relative p-5 shadow-lg rounded-md transition-all duration-200 ease-in-out hover:scale-105 hover:shadow-xl hover:z-10 ${color} ${rotation}`}
+      className={`relative p-5 pb-8 shadow-lg rounded-md transition-all duration-200 ease-in-out hover:scale-105 hover:shadow-xl hover:z-10 ${color} ${rotation}`}
       style={{ fontFamily: "'Caveat', cursive" }}
     >
       <button 
@@ -23,6 +22,11 @@ const StickyNote: React.FC<StickyNoteProps> = ({ note, color, rotation, onDelete
         X
       </button>
       <p className="text-lg text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">{note.content}</p>
+      {note.timestamp && (
+        <span className="absolute bottom-2 right-2 font-sans text-xs text-gray-600 dark:text-gray-400">
+          {note.timestamp}
+        </span>
+      )}
     </div>
   );
 };

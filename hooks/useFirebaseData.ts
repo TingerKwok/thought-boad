@@ -33,11 +33,13 @@ export function useFirebaseData() {
             ? Object.entries(topicData.notes).map(([noteId, noteData]) => ({
               id: noteId,
               content: noteData.content,
+              timestamp: noteData.timestamp || '', // Handle old notes without timestamps
             }))
             : [];
           return {
             id: topicId,
             title: topicData.title,
+            createdAt: topicData.createdAt || '', // Handle old topics without dates
             notes: notesArray,
           };
         });
@@ -60,6 +62,7 @@ export function useFirebaseData() {
     const newTopicRef = push(topicsRef); // 'push' generates a unique ID.
     set(newTopicRef, {
       title,
+      createdAt: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD format
       notes: {}, // Initialize with an empty notes object.
     });
   }, []);
@@ -76,6 +79,7 @@ export function useFirebaseData() {
     const newNoteRef = push(notesRef);
     set(newNoteRef, {
       content,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }),
     });
   }, []);
 
