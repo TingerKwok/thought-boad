@@ -1,5 +1,7 @@
-import React, { useState, useMemo } from 'react';
-import { Topic, Note } from '../types';
+
+import React, { useState } from 'react';
+// FIX: The Note type is not directly used, Topic is sufficient.
+import { Topic } from '../types';
 import StickyNote from './StickyNote';
 
 interface TopicBoardProps {
@@ -9,24 +11,9 @@ interface TopicBoardProps {
   deleteTopic: (topicId: string) => void;
 }
 
-const noteColors = [
-  'bg-yellow-200 dark:bg-yellow-700',
-  'bg-green-200 dark:bg-green-700',
-  'bg-pink-200 dark:bg-pink-700',
-  'bg-blue-200 dark:bg-blue-700',
-  'bg-purple-200 dark:bg-purple-700',
-  'bg-orange-200 dark:bg-orange-700',
-];
-
-const rotations = ['-rotate-2', 'rotate-2', '-rotate-1', 'rotate-1', '-rotate-3', 'rotate-3'];
-
 const TopicBoard: React.FC<TopicBoardProps> = ({ topic, addNote, deleteNote, deleteTopic }) => {
   const [newNoteContent, setNewNoteContent] = useState('');
   
-  const memoizedRotations = useMemo(() => {
-    return topic.notes.map((_, index) => rotations[index % rotations.length]);
-  }, [topic.notes]);
-
   const handleAddNote = () => {
     if (newNoteContent.trim()) {
       addNote(topic.id, newNoteContent);
@@ -64,13 +51,14 @@ const TopicBoard: React.FC<TopicBoardProps> = ({ topic, addNote, deleteNote, del
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 min-h-[100px]">
-        {topic.notes.map((note, index) => (
+        {/* FIX: Removed invalid 'color' and 'rotation' props, which are properties of the 'note' object.
+            Added the required 'onMouseDown' prop with a no-op function as this view doesn't support dragging. */}
+        {topic.notes.map((note) => (
           <StickyNote 
             key={note.id} 
             note={note} 
-            color={noteColors[index % noteColors.length]}
-            rotation={memoizedRotations[index]}
             onDelete={handleDeleteNote}
+            onMouseDown={() => {}}
           />
         ))}
       </div>

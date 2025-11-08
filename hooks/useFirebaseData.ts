@@ -1,102 +1,79 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ref, onValue, set, remove, push } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { ref, onValue, set, remove, push, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { db, isFirebaseConfigured } from '../firebaseConfig';
-import { Topic, Note } from '../types';
+import { Note } from '../types';
 
-// This interface describes the shape of the data as it's stored in Firebase.
-// Firebase Realtime Database doesn't natively support arrays, so we use objects with unique keys.
-interface FirebaseTopics {
-  [key: string]: Omit<Topic, 'id' | 'notes'> & {
-    notes?: { [key: string]: Omit<Note, 'id'> }
-  };
+interface FirebaseNotes {
+  [key: string]: Omit<Note, 'id'>;
 }
 
+const noteColors = [
+  'bg-yellow-200 dark:bg-yellow-700',
+  'bg-green-200 dark:bg-green-700',
+  'bg-pink-200 dark:bg-pink-700',
+  'bg-blue-200 dark:bg-blue-700',
+  'bg-purple-200 dark:bg-purple-700',
+  'bg-orange-200 dark:bg-orange-700',
+];
+
+const rotations = ['-rotate-2', 'rotate-2', '-rotate-1', 'rotate-1', '-rotate-3', 'rotate-3'];
+
 export function useFirebaseData() {
-  const [topics, setTopics] = useState<Topic[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
 
   useEffect(() => {
-    // If Firebase is not configured, do nothing. The App component will display a setup message.
     if (!isFirebaseConfigured || !db) {
       return;
     }
 
-    const topicsRef = ref(db, 'topics');
+    const notesRef = ref(db, 'notes');
     
-    // Set up a real-time listener. 'onValue' fires once with the initial data,
-    // and then again every time the data changes in the database.
-    const unsubscribe = onValue(topicsRef, (snapshot) => {
-      const data: FirebaseTopics | null = snapshot.val();
-      if (data) {
-        // Transform the Firebase object data into the array format the app uses.
-        const topicsArray: Topic[] = Object.entries(data).map(([topicId, topicData]) => {
-          const notesArray: Note[] = topicData.notes 
-            ? Object.entries(topicData.notes).map(([noteId, noteData]) => ({
-              id: noteId,
-              content: noteData.content,
-              timestamp: noteData.timestamp || '', // Handle old notes without timestamps
-            }))
-            : [];
-          return {
-            id: topicId,
-            title: topicData.title,
-            createdAt: topicData.createdAt || '', // Handle old topics without dates
-            notes: notesArray,
-          };
-        });
-        // Reverse the array to show the most recently created topics first.
-        setTopics(topicsArray.reverse());
-      } else {
-        // If there's no data in the database, set topics to an empty array.
-        setTopics([]);
-      }
+    const unsubscribe = onValue(notesRef, (snapshot) => {
+      const data: FirebaseNotes | null = snapshot.val();
+      const notesArray: Note[] = data 
+        ? Object.entries(data).map(([noteId, noteData]) => ({ id: noteId, ...noteData }))
+        : [];
+      setNotes(notesArray);
     });
 
-    // Return a cleanup function to detach the listener when the component unmounts.
-    // This prevents memory leaks.
     return () => unsubscribe();
-  }, []); // The empty dependency array ensures this effect runs only once on mount.
-
-  const addTopic = useCallback((title: string) => {
-    if (!db) return;
-    const topicsRef = ref(db, 'topics');
-    const newTopicRef = push(topicsRef); // 'push' generates a unique ID.
-    set(newTopicRef, {
-      title,
-      createdAt: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD format
-      notes: {}, // Initialize with an empty notes object.
-    });
-  }, []);
-  
-  const deleteTopic = useCallback((topicId: string) => {
-    if (!db) return;
-    const topicRef = ref(db, `topics/${topicId}`);
-    remove(topicRef);
   }, []);
 
-  const addNoteToTopic = useCallback((topicId: string, content: string) => {
+  const addNote = useCallback((content: string, type: 'text' | 'image') => {
     if (!db) return;
-    const notesRef = ref(db, `topics/${topicId}/notes`);
+    const notesRef = ref(db, 'notes');
     const newNoteRef = push(notesRef);
     
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = (now.getMonth() + 1).toString().padStart(2, '0');
-    const day = now.getDate().toString().padStart(2, '0');
-    const hour = now.getHours().toString().padStart(2, '0');
-    const minute = now.getMinutes().toString().padStart(2, '0');
-    const timestamp = `${year}/${month}/${day} ${hour}:${minute}`;
+    const maxZ = notes.reduce((max, note) => Math.max(max, note.zIndex || 1), 0);
 
-    set(newNoteRef, {
+    const newNote: Omit<Note, 'id'> = {
       content,
-      timestamp,
-    });
-  }, []);
+      type,
+      x: window.innerWidth / 2 - 100 + (Math.random() * 100 - 50),
+      y: window.innerHeight / 3 + (Math.random() * 100 - 50),
+      color: type === 'image' 
+        ? 'bg-white dark:bg-gray-200' 
+        : noteColors[Math.floor(Math.random() * noteColors.length)],
+      rotation: type === 'image' 
+        ? '' 
+        : rotations[Math.floor(Math.random() * rotations.length)],
+      zIndex: maxZ + 1,
+    };
 
-  const deleteNoteFromTopic = useCallback((topicId: string, noteId: string) => {
+    set(newNoteRef, newNote);
+  }, [notes]);
+  
+  const deleteNote = useCallback((noteId: string) => {
     if (!db) return;
-    const noteRef = ref(db, `topics/${topicId}/notes/${noteId}`);
+    const noteRef = ref(db, `notes/${noteId}`);
     remove(noteRef);
   }, []);
 
-  return { topics, addTopic, deleteTopic, addNoteToTopic, deleteNoteFromTopic };
+  const updateNote = useCallback((noteId: string, newValues: Partial<Omit<Note, 'id'>>) => {
+      if (!db) return;
+      const noteRef = ref(db, `notes/${noteId}`);
+      update(noteRef, newValues);
+  }, []);
+
+  return { notes, addNote, deleteNote, updateNote };
 }
